@@ -1,5 +1,7 @@
 import { ModeToggle } from "@/components/ui/mode-toggle";
 import { Footer, FooterBottom } from "@/components/ui/footer";
+import { Github, GithubIcon, Linkedin, Mail } from "lucide-react";
+import { GitHubLogoIcon, LinkedInLogoIcon } from "@radix-ui/react-icons";
 
 export default function FooterSection() {
 
@@ -13,8 +15,9 @@ const getCurrentYear = () => new Date().getFullYear();
           <div>© {getCurrentYear()} Ai Image Generator. All rights reserved</div>
             <div className="flex items-center gap-4">
               <a href="login">Sign in</a> <a href="register">Sign up</a>|
-              <a href="#">Privacy Policy</a>
-              <a href="#">Terms of Service</a>
+              <a href="https://github.com/saqlain991/Image-Gen_AI"><GithubIcon  /></a>
+              <a href="https://www.linkedin.com/in/saqlain-sultan"><Linkedin /></a>
+              <a href="mailto:saqlainsultan991@gmail.com"><Mail /></a>
               <ModeToggle />
             </div>
           </FooterBottom>

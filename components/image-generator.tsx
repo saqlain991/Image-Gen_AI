@@ -143,7 +143,7 @@ export function ImageGenerator() {
               <CardFooter className="flex items-center justify-between p-4">
                 <div className="flex items-center space-x-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={img.userAvatar || "/placeholder-avatar.png"} />
+                    <AvatarImage src={img.userAvatar || ""} />
                     <AvatarFallback> {getInitials(img.userName || "User")}</AvatarFallback>
                   </Avatar>
                   <div className="text-sm max-w-[150px] truncate">
