@@ -14,18 +14,7 @@ import { Check } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 
-// Define types for User and Session
-interface User {
-  name?: string | null;
-  email?: string | null;
-  image?: string | null;
-  role?: "GUEST" | "FREE" | "PRO"; // Ensure role is part of the User type
-}
-
-interface Session {
-  user?: User;
-}
-
+// Plan details
 const plans = [
   {
     name: "Free",
@@ -52,17 +41,15 @@ const plans = [
     ],
   },
 ];
+
 export default function PricingPage() {
-  const { data: session } = useSession(); // Remove incorrect type parameter
+  const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleUpgrade = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/stripe", {
-        method: "POST",
-      });
-
+      const response = await fetch("/api/stripe", { method: "POST" });
       if (!response.ok) throw new Error("Failed to create checkout session");
 
       const data = await response.json();

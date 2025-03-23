@@ -37,7 +37,7 @@ export function ImageGallery() {
           <CardFooter className="flex items-center justify-between p-4">
             <div className="flex items-center space-x-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src="/placeholder-avatar.jpg" />
+                <AvatarImage src="/placeholder-avatar.png" />
                 <AvatarFallback>U</AvatarFallback>
               </Avatar>
               <div className="text-sm">

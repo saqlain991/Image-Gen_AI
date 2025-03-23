@@ -14,7 +14,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import ShowcasePage from "@/app/showcase/page";
 
 const formSchema = z.object({
   prompt: z.string().min(1, "Prompt is required").max(400),
@@ -81,6 +80,12 @@ export function ImageGenerator() {
     }
   };
 
+   // Function to extract the first letter and capitalize it
+   const getInitials = (name: string) => {
+    const firstWord = name.split(" ")[0]; // Get first word of the name
+    return firstWord.charAt(0).toUpperCase(); // Capitalize the first letter
+  };
+
   if (!session) {
     return (
       <div className="text-center p-8 border rounded-lg">
@@ -118,6 +123,7 @@ export function ImageGenerator() {
         </Button>
       </form>
 
+      {/* //Here is the generated Image */}
       {images.length > 0 && (
         <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {images.map((img) => (
@@ -137,8 +143,8 @@ export function ImageGenerator() {
               <CardFooter className="flex items-center justify-between p-4">
                 <div className="flex items-center space-x-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={img.userAvatar || "/placeholder-avatar.jpg"} />
-                    <AvatarFallback>U</AvatarFallback>
+                    <AvatarImage src={img.userAvatar || "/placeholder-avatar.png"} />
+                    <AvatarFallback> {getInitials(img.userName || "User")}</AvatarFallback>
                   </Avatar>
                   <div className="text-sm max-w-[150px] truncate">
                     <p className="font-medium">{img.userName || "User"}</p>
@@ -164,7 +170,7 @@ export function ImageGenerator() {
         </div>
       )}
       <div className="flex justify-center items-center ">
-      <Link href="ShowcasePage" target="_blank">
+      <Link href="showcase" target="_blank">
       <Button>View Other&apos;s Creativity</Button>
       </Link>
     </div>

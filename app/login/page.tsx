@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
@@ -41,9 +41,31 @@ export default function LoginPage() {
     },
   });
 
+  // ✅ Load remembered credentials from localStorage
+  useEffect(() => {
+    const rememberedData = localStorage.getItem("rememberedCredentials");
+    if (rememberedData) {
+      const { email, password } = JSON.parse(rememberedData);
+      form.setValue("email", email);
+      form.setValue("password", password);
+      form.setValue("rememberMe", true);
+    }
+  }, [form]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
       setIsLoading(true);
+
+      // ✅ Handle Remember Me Storage
+      if (values.rememberMe) {
+        localStorage.setItem(
+          "rememberedCredentials",
+          JSON.stringify({ email: values.email, password: values.password })
+        );
+      } else {
+        localStorage.removeItem("rememberedCredentials");
+      }
+
       const result = await signIn("credentials", {
         email: values.email,
         password: values.password,
@@ -55,8 +77,16 @@ export default function LoginPage() {
         return;
       }
 
+      // ✅ Fetch session to get user name
+      const sessionRes = await fetch("/api/auth/session");
+      const session = await sessionRes.json();
+
+      // ✅ Extract first name
+      const fullName = session?.user?.name || "User";
+      const firstName = fullName.split(" ")[0];
+
       router.push("/");
-      toast.success("Welcome back!");
+      toast.success(`Welcome back, ${firstName}!`);
     } catch (error) {
       toast.error("Something went wrong");
     } finally {
@@ -86,6 +116,7 @@ export default function LoginPage() {
                     <Input
                       type="email"
                       placeholder="Enter your email"
+                      autoComplete="email"
                       {...field}
                     />
                   </FormControl>
@@ -105,6 +136,7 @@ export default function LoginPage() {
                       <Input
                         type={showPassword ? "text" : "password"}
                         placeholder="Enter your password"
+                        autoComplete="current-password"
                         {...field}
                       />
                       <Button
@@ -146,7 +178,7 @@ export default function LoginPage() {
             />
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              Sign In
+              {isLoading ? "Signing In..." : "Sign In"}
             </Button>
           </form>
         </Form>
