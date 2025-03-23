@@ -74,7 +74,8 @@ export async function POST(req: Request) {
       data: {
         cloudinaryUrl: cloudinaryUploadResponse.secure_url,
         prompt,
-        userId: user?.id || null,
+        // userId: user?.id || null,
+        userId: user?.id ?? "guest",
         userName: user?.name || "",
         userAvatar: user?.image || "",
       },
