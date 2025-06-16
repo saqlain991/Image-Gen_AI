@@ -72,7 +72,7 @@ This project is open-source and available under the **MIT License**.
 ## ⭐ Support & Contributions  
 Feel free to fork the repo, raise issues, and contribute! If you like this project, **give it a star ⭐ on GitHub!**  
 
-💻 **GitHub Repository:** [Your GitHub Repo Link](https://github.com/saqlain991/Image-Gen_AI/)  
+💻 **GitHub Repository:** [GitHub Repo Link](https://github.com/saqlain991/Image-Gen_AI/)  
 
 ---
 
