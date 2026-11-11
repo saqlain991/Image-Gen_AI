@@ -1,54 +1,58 @@
+import Image from "next/image";
+import { ArrowUpRight, Sparkles, WandSparkles } from "lucide-react";
 import Link from "next/link";
-import { ArrowDown, ArrowUpRight, Sparkles, Terminal } from "lucide-react";
 import { ImageGenerator } from "@/components/image-generator";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
-const shark = String.raw`                    /\
-     .             /  \              .
-        .         / /\ \       .
-                 / /  \ \
-      __________/ /    \ \________
-   __/  _________/      \________  \__
-  <____/   .   .      .   .   \______>
-       \________________________/
-          \  \  \    /  /  /
-           \__\__\__/__/__/
-               \______/`;
 
 export default function Home() {
   return (
-    <main className="home-experience">
-      <div className="home-grid" aria-hidden="true" />
-      <div className="home-shell">
-        <section className="home-hero">
-          <div className="home-copy">
-            <div className="home-kicker"><Terminal className="size-4" /> IMAGE STUDIO <span>·</span> CLOUDFLARE AI</div>
-            <h1>Make something<br /><span>from nothing.</span></h1>
-            <p className="home-description">One thought. A few words. A whole new world.</p>
-            <div className="home-actions">
-              <Button asChild size="lg" className="home-primary"><a href="#create">Open the studio <ArrowDown /></a></Button>
-              <Link href="/showcase" className="home-secondary">See what others made <ArrowUpRight /></Link>
+    <div className="page-shell">
+      <div className="mx-auto max-w-6xl">
+        <section className="grid items-center gap-10 pb-12 pt-4 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:pb-20 lg:pt-10">
+          <div className="flex flex-col items-start gap-6">
+            <Badge variant="secondary" className="gap-2 px-3 py-1.5 text-xs font-medium"><Sparkles className="size-3.5" /> Powered by Cloudflare Workers AI</Badge>
+            <h1 className="max-w-2xl text-5xl font-semibold tracking-tight sm:text-6xl lg:text-7xl">
+              Your ideas, <span className="text-primary">made visible.</span>
+            </h1>
+            <p className="max-w-xl text-lg leading-relaxed text-muted-foreground">
+              Describe what you imagine. Create an image in seconds, keep it in your gallery, and share it with the world.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild size="lg"><a href="#create"><WandSparkles /> Start creating</a></Button>
+              <Button asChild size="lg" variant="outline"><Link href="/showcase">Explore images <ArrowUpRight /></Link></Button>
             </div>
-            <p className="home-model-note"><Sparkles className="size-3.5" /> Pick from Cloudflare’s image models in the studio</p>
           </div>
-          <div className="shark-stage" aria-label="Animated ASCII shark swimming through a deep sea grid">
-            <div className="shark-glow" />
-            <div className="shark-label"><span>FIG. 01</span><span>ABYSSAL CREATION</span></div>
-            <pre className="ascii-shark">{shark}</pre>
-            <div className="shark-caption"><span>░░░░░░░░░░░░░░░░░░</span><span>SCANNING THE UNKNOWN</span></div>
-            <span className="shark-coordinate">36° 09′ N&nbsp; 128° 22′ W</span>
+          <div className="relative mx-auto w-full max-w-lg">
+            <div className="absolute -inset-4 rounded-[2rem] bg-primary/10 blur-3xl" aria-hidden="true" />
+            <div className="relative overflow-hidden rounded-[2rem] border bg-card p-2 shadow-xl">
+              <Image
+                src="/generated/greenhouse-sunrise.png"
+                alt="Illustration of a greenhouse on a misty hillside at sunrise"
+                width={1024}
+                height={1024}
+                priority
+                className="aspect-[4/3] w-full rounded-[1.5rem] object-cover"
+              />
+              <div className="flex items-center gap-3 px-3 py-4 text-sm text-muted-foreground">
+                <span className="flex size-8 items-center justify-center rounded-full bg-secondary text-primary"><Sparkles className="size-4" /></span>
+                A little inspiration for your next prompt
+              </div>
+            </div>
           </div>
-          <div className="home-scroll-cue"><span>01 — THE PROMPT</span><span className="scroll-line" />SCROLL TO CREATE</div>
         </section>
 
-        <section id="create" className="home-studio scroll-mt-20">
-          <div className="studio-heading">
-            <div><p className="studio-index">02 / YOUR CANVAS</p><h2>Describe the impossible.</h2></div>
-            <p>Choose a model. Write a prompt.<br />Let the machine dream.</p>
+        <section id="create" className="scroll-mt-24 pb-10">
+          <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">The studio</p>
+              <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Create something new</h2>
+            </div>
+            <p className="text-sm text-muted-foreground">Write a prompt and let the image take shape.</p>
           </div>
           <ImageGenerator />
         </section>
       </div>
-    </main>
+    </div>
   );
 }
