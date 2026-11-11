@@ -15,7 +15,7 @@ export type ImageModel = {
 // Fixed settings make the per-image estimates comparable. Cloudflare can change
 // pricing or actual usage; the dashboard remains the source of truth.
 export const IMAGE_MODELS: ImageModel[] = [
-  { id: "@cf/black-forest-labs/flux-1-schnell", name: "FLUX.1 Schnell", provider: "Black Forest Labs", description: "Fast, versatile images", format: "json", parameters: { steps: 4 }, estimatedNeurons: 43.2 },
+  { id: "@cf/black-forest-labs/flux-1-schnell", name: "FLUX.1 Schnell", provider: "Black Forest Labs", description: "Fast, versatile images", format: "json", parameters: { steps: 4 }, estimatedNeurons: 57.6 },
   { id: "@cf/black-forest-labs/flux-2-klein-4b", name: "FLUX.2 Klein 4B", provider: "Black Forest Labs", description: "Fast, detailed results", format: "multipart", parameters: { width: 512, height: 512 }, estimatedNeurons: 26.05 },
   { id: "@cf/black-forest-labs/flux-2-klein-9b", name: "FLUX.2 Klein 9B", provider: "Black Forest Labs", description: "Higher detail, larger quota use", format: "multipart", parameters: { width: 1024, height: 1024 }, estimatedNeurons: 1363.64, availabilityNote: "Cloudflare returned an internal error for this model during validation; it may be temporarily unavailable." },
   { id: "@cf/black-forest-labs/flux-2-dev", name: "FLUX.2 Dev", provider: "Black Forest Labs", description: "Detailed, realistic images", format: "multipart", parameters: { width: 512, height: 512, steps: 20 }, estimatedNeurons: 750 },

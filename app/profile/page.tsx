@@ -59,7 +59,7 @@ export default function ProfilePage() {
             <p className="text-sm font-semibold">{session?.user?.name || "Creator"}</p>
             <p className="text-sm text-muted-foreground">{session?.user?.email}</p>
           </div>
-          <div className="flex items-center gap-3 text-sm"><span className="rounded-full bg-secondary px-3 py-1 font-medium text-secondary-foreground">{session?.user?.role || "FREE"} plan</span><span className="text-muted-foreground">{images.length} images</span></div>
+          <div className="flex items-center gap-3 text-sm"><span className="rounded-full bg-secondary px-3 py-1 font-medium text-secondary-foreground">Cloudflare AI</span><span className="text-muted-foreground">{images.length} images</span></div>
         </div>
 
         {loading ? (
