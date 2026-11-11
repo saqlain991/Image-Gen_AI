@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Sparkles } from "lucide-react";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -66,17 +66,18 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="container mx-auto flex min-h-screen items-center justify-center">
-      <div className="mx-auto w-full max-w-md space-y-6">
-        <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-bold">Create an account</h1>
+    <div className="page-shell flex min-h-[calc(100vh-9rem)] items-center justify-center">
+      <div className="surface-card w-full max-w-md p-6 shadow-lg sm:p-9">
+        <div className="mb-8 flex flex-col items-center gap-2 text-center">
+          <span className="mb-2 flex size-12 items-center justify-center rounded-2xl bg-secondary text-primary"><Sparkles className="size-6" /></span>
+          <h1 className="text-3xl font-semibold tracking-tight">Create an account</h1>
           <p className="text-muted-foreground">
             Enter your details to create your account
           </p>
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <FormField
               control={form.control}
               name="name"
@@ -127,6 +128,7 @@ export default function RegisterPage() {
                         variant="ghost"
                         size="icon"
                         className="absolute right-0 top-0"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
                         onClick={() => setShowPassword(!showPassword)}
                       >
                         {showPassword ? (
@@ -166,7 +168,7 @@ export default function RegisterPage() {
           </form>
         </Form>
 
-        <div className="text-center text-sm">
+        <div className="mt-6 text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link href="/login" className="text-primary hover:underline">
             Sign In

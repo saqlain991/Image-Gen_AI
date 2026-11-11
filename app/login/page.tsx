@@ -19,7 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Sparkles } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -41,13 +41,12 @@ export default function LoginPage() {
     },
   });
 
-  // ✅ Load remembered credentials from localStorage
+  // Remember only the email address. Passwords should never be stored in localStorage.
   useEffect(() => {
-    const rememberedData = localStorage.getItem("rememberedCredentials");
-    if (rememberedData) {
-      const { email, password } = JSON.parse(rememberedData);
-      form.setValue("email", email);
-      form.setValue("password", password);
+    localStorage.removeItem("rememberedCredentials");
+    const rememberedEmail = localStorage.getItem("rememberedEmail");
+    if (rememberedEmail) {
+      form.setValue("email", rememberedEmail);
       form.setValue("rememberMe", true);
     }
   }, [form]);
@@ -56,32 +55,23 @@ export default function LoginPage() {
     try {
       setIsLoading(true);
 
-      // ✅ Handle Remember Me Storage
-      if (values.rememberMe) {
-        localStorage.setItem(
-          "rememberedCredentials",
-          JSON.stringify({ email: values.email, password: values.password })
-        );
-      } else {
-        localStorage.removeItem("rememberedCredentials");
-      }
-
       const result = await signIn("credentials", {
         email: values.email,
         password: values.password,
         redirect: false,
       });
 
-      if (result?.error) {
+      if (!result?.ok || result.error) {
         toast.error("Invalid credentials");
         return;
       }
 
-      // ✅ Fetch session to get user name
+      if (values.rememberMe) localStorage.setItem("rememberedEmail", values.email);
+      else localStorage.removeItem("rememberedEmail");
+
       const sessionRes = await fetch("/api/auth/session");
       const session = await sessionRes.json();
 
-      // ✅ Extract first name
       const fullName = session?.user?.name || "User";
       const firstName = fullName.split(" ")[0];
 
@@ -95,17 +85,18 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="container mx-auto flex min-h-screen items-center justify-center">
-      <div className="mx-auto w-full max-w-md space-y-6">
-        <div className="space-y-2 text-center">
-          <h1 className="text-3xl font-bold">Welcome back</h1>
+    <div className="page-shell flex min-h-[calc(100vh-9rem)] items-center justify-center">
+      <div className="surface-card w-full max-w-md p-6 shadow-lg sm:p-9">
+        <div className="mb-8 flex flex-col items-center gap-2 text-center">
+          <span className="mb-2 flex size-12 items-center justify-center rounded-2xl bg-secondary text-primary"><Sparkles className="size-6" /></span>
+          <h1 className="text-3xl font-semibold tracking-tight">Welcome back</h1>
           <p className="text-muted-foreground">
-            Enter your credentials to access your account
+            Sign in and keep creating.
           </p>
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <FormField
               control={form.control}
               name="email"
@@ -144,6 +135,7 @@ export default function LoginPage() {
                         variant="ghost"
                         size="icon"
                         className="absolute right-0 top-0"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
                         onClick={() => setShowPassword(!showPassword)}
                       >
                         {showPassword ? (
@@ -163,7 +155,7 @@ export default function LoginPage() {
               control={form.control}
               name="rememberMe"
               render={({ field }) => (
-                <FormItem className="flex items-center space-x-2">
+                <FormItem className="flex items-center gap-2">
                   <FormControl>
                     <Checkbox
                       checked={field.value}
@@ -183,7 +175,7 @@ export default function LoginPage() {
           </form>
         </Form>
 
-        <div className="text-center text-sm">
+        <div className="mt-6 text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{" "}
           <Link href="/register" className="text-primary hover:underline">
             Register

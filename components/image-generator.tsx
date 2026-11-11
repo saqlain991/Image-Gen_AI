@@ -1,179 +1,205 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form";
-import { Textarea } from "@/components/ui/textarea";
+import { ArrowRight, ImagePlus, Loader2, Sparkles, WandSparkles } from "lucide-react";
 import { toast } from "sonner";
-import { Download, Loader2 } from "lucide-react";
-import Link from "next/link";
-import Image from "next/image";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { Skeleton } from "@/components/ui/skeleton";
+import { GalleryImage, ImageCard } from "@/components/image-card";
+import { DEFAULT_IMAGE_MODEL, IMAGE_MODELS } from "@/lib/image-models";
 
-const formSchema = z.object({
-  prompt: z.string().min(1, "Prompt is required").max(400),
-});
+const formSchema = z.object({ prompt: z.string().trim().min(1, "Describe your image first").max(400), modelId: z.string() });
+const ideas = ["A city floating above the clouds", "A cozy cabin under the northern lights", "A robot tending a wild garden"];
+const providers = Array.from(new Set(IMAGE_MODELS.map((model) => model.provider)));
 
-type GeneratedImage = {
-  id: string;
-  cloudinaryUrl: string;
-  prompt: string;
-  userName: string;
-  userAvatar: string;
+type Usage = {
+  estimatedAppNeuronsToday: number;
+  freeNeuronsPerDay: number;
+  untrackedImages: number;
+  yourImagesToday: number;
+  resetsAt: string;
 };
 
 export function ImageGenerator() {
-  const { data: session } = useSession();
-  const [isLoading, setIsLoading] = useState(false);
-  const [images, setImages] = useState<GeneratedImage[]>([]);
-
+  const { status } = useSession();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoadingImages, setIsLoadingImages] = useState(true);
+  const [images, setImages] = useState<GalleryImage[]>([]);
+  const [usage, setUsage] = useState<Usage | null>(null);
+  const [retiredIds, setRetiredIds] = useState<string[]>([]);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { prompt: "" },
+    defaultValues: { prompt: "", modelId: DEFAULT_IMAGE_MODEL },
   });
-
-  // Fetch images from database (API route)
-  const fetchImages = async () => {
-    try {
-      const res = await fetch("/api/user-images");
-      if (res.ok) {
-        const data = await res.json();
-        setImages(data);
-      } else {
-        console.error("Failed to fetch images");
-      }
-    } catch (err) {
-      console.error("Error fetching images", err);
-    }
-  };
+  const promptLength = form.watch("prompt").length;
+  const selectedModel = IMAGE_MODELS.find((model) => model.id === form.watch("modelId")) || IMAGE_MODELS[0];
 
   useEffect(() => {
-    if (session) fetchImages();
-  }, [session]);
+    setRetiredIds(IMAGE_MODELS.filter((model) => model.retiresOn && Date.now() >= Date.parse(`${model.retiresOn}T00:00:00Z`)).map((model) => model.id));
+  }, []);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const fetchUsage = useCallback(async () => {
     try {
-      setIsLoading(true);
+      const response = await fetch("/api/usage", { cache: "no-store" });
+      if (response.ok) setUsage(await response.json());
+    } catch { /* Usage is supplementary; generation still handles service errors. */ }
+  }, []);
+
+  const fetchImages = useCallback(async () => {
+    try {
+      const response = await fetch("/api/user-images", { cache: "no-store" });
+      if (!response.ok) throw new Error("Could not load your images");
+      setImages(await response.json());
+    } catch {
+      toast.error("Could not load your images");
+    } finally {
+      setIsLoadingImages(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      void fetchImages();
+      void fetchUsage();
+    }
+    else setIsLoadingImages(false);
+  }, [status, fetchImages, fetchUsage]);
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsGenerating(true);
+    try {
       const response = await fetch("/api/generate-image", {
         method: "POST",
-        body: JSON.stringify({ prompt: values.prompt }),
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
       });
-
       const data = await response.json();
-      if (response.ok) {
-        toast.success("Image generated successfully!");
-        form.reset();
-        fetchImages(); // Re-fetch images after new generation
-      } else {
-        toast.error(data.error || "Failed to generate image");
-      }
-    } catch {
-      toast.error("Failed to generate image");
+      if (!response.ok) throw new Error(data.error || "Image generation failed");
+      toast.success(data.reused ? "Showing your existing image for this model and prompt" : "Your image is ready");
+      form.setValue("prompt", "");
+      await fetchImages();
+      await fetchUsage();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Image generation failed");
     } finally {
-      setIsLoading(false);
+      setIsGenerating(false);
     }
-  };
+  }
 
-   // Function to extract the first letter and capitalize it
-   const getInitials = (name: string) => {
-    const firstWord = name.split(" ")[0]; // Get first word of the name
-    return firstWord.charAt(0).toUpperCase(); // Capitalize the first letter
-  };
+  if (status === "loading") {
+    return <Skeleton className="h-64 w-full rounded-3xl" />;
+  }
 
-  if (!session) {
+  if (status !== "authenticated") {
     return (
-      <div className="text-center p-8 border rounded-lg">
-        <p className="text-muted-foreground">Please sign in to generate images</p>
-        <Button className="mt-4" asChild>
-          <Link href="/login">Sign In</Link>
-        </Button>
-      </div>
+      <Card className="rounded-3xl border-dashed bg-card/80 shadow-sm">
+        <CardContent className="flex flex-col items-center gap-4 px-6 py-12 text-center">
+          <span className="flex size-14 items-center justify-center rounded-2xl bg-secondary text-primary"><ImagePlus className="size-7" /></span>
+          <div className="flex flex-col gap-1">
+            <h3 className="text-xl font-semibold">Your canvas is waiting</h3>
+            <p className="max-w-md text-sm text-muted-foreground">Sign in to turn a prompt into an image and keep your creations together.</p>
+          </div>
+          <div className="flex gap-3">
+            <Button asChild><Link href="/login">Sign in <ArrowRight /></Link></Button>
+            <Button asChild variant="outline"><Link href="/register">Create account</Link></Button>
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="prompt"
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <Textarea
-                  placeholder="Describe the image you want to generate..."
-                  className="h-24 resize-none"
-                  {...field}
-                  disabled={isLoading}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" disabled={isLoading} className="w-full">
-          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Generate Image
-        </Button>
-      </form>
+    <div className="flex flex-col gap-10">
+      <Card className="overflow-hidden rounded-3xl shadow-sm">
+        <CardHeader className="border-b bg-secondary/30 px-5 py-5 sm:px-8">
+          <CardTitle className="flex items-center gap-2 text-lg"><WandSparkles className="size-5 text-primary" /> Text to image</CardTitle>
+          <CardDescription>Be specific about the subject, setting, colors, and mood.</CardDescription>
+        </CardHeader>
+        <CardContent className="p-5 sm:p-8">
+          <div className="mb-7 rounded-2xl border bg-secondary/20 p-4 sm:p-5">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <div><p className="text-sm font-semibold">Cloudflare free allowance</p><p className="text-xs text-muted-foreground">Shared across this app and other uses of the same Cloudflare account. Resets at 00:00 UTC.</p></div>
+              <p className="text-sm font-semibold tabular-nums">{usage ? `${Math.round(usage.estimatedAppNeuronsToday).toLocaleString()} / ${usage.freeNeuronsPerDay.toLocaleString()}` : "Loading…"} neurons</p>
+            </div>
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-secondary"><div className="h-full rounded-full bg-primary transition-all" style={{ width: `${usage ? Math.min(100, usage.estimatedAppNeuronsToday / usage.freeNeuronsPerDay * 100) : 0}%` }} /></div>
+            <p className="mt-2 text-xs text-muted-foreground">App estimate only; Cloudflare Dashboard shows actual account usage. {usage ? `You created ${usage.yourImagesToday} image${usage.yourImagesToday === 1 ? "" : "s"} today.` : ""}{usage?.untrackedImages ? ` ${usage.untrackedImages} earlier image${usage.untrackedImages === 1 ? " has" : "s have"} no estimate.` : ""}</p>
+          </div>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-5">
+              <FormField control={form.control} name="modelId" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Image model</FormLabel>
+                  <FormControl>
+                    <select {...field} disabled={isGenerating} className="flex h-11 w-full rounded-xl border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      {providers.map((provider) => <optgroup key={provider} label={provider}>
+                        {IMAGE_MODELS.filter((model) => model.provider === provider).map((model) => <option key={model.id} value={model.id} disabled={retiredIds.includes(model.id)}>{model.name}{model.retiresOn ? " · retires Nov 20" : ""}</option>)}
+                      </optgroup>)}
+                    </select>
+                  </FormControl>
+                  <p className="text-xs text-muted-foreground">{selectedModel.description}. {selectedModel.estimatedNeurons === null ? "Neuron estimate unavailable" : `About ${selectedModel.estimatedNeurons.toLocaleString()} neurons per image`}. {selectedModel.retiresOn ? "Cloudflare plans to retire this model on November 20, 2026." : ""}</p>
+                  {selectedModel.availabilityNote && <p className="text-xs text-amber-700 dark:text-amber-300">{selectedModel.availabilityNote}</p>}
+                  <FormMessage />
+                </FormItem>
+              )} />
+              <FormField
+                control={form.control}
+                name="prompt"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between gap-3"><FormLabel>Your prompt</FormLabel><span className="text-xs text-muted-foreground">{promptLength}/400</span></div>
+                    <FormControl>
+                      <Textarea
+                        placeholder="A tiny glass greenhouse on a misty mountain at sunrise…"
+                        className="min-h-32 resize-y bg-background text-base"
+                        disabled={isGenerating}
+                        aria-invalid={!!form.formState.errors.prompt}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex flex-wrap gap-2" aria-label="Prompt ideas">
+                {ideas.map((idea) => (
+                  <Button key={idea} type="button" variant="secondary" size="sm" disabled={isGenerating} onClick={() => form.setValue("prompt", idea, { shouldValidate: true })} className="h-auto whitespace-normal text-left">
+                    {idea}
+                  </Button>
+                ))}
+              </div>
+              <Button type="submit" size="lg" disabled={isGenerating} className="w-full sm:w-auto sm:self-start">
+                {isGenerating ? <Loader2 className="animate-spin" /> : <Sparkles />}
+                {isGenerating ? "Creating your image…" : "Generate image"}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
 
-      {/* //Here is the generated Image */}
-      {images.length > 0 && (
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {images.map((img) => (
-            <Card key={img.id} className="overflow-hidden">
-              <CardContent className="p-4">
-                <div className="aspect-square relative rounded-lg overflow-hidden">
-                  <Image
-                    width={450}
-                    height={450}
-                    src={img.cloudinaryUrl}
-                    alt="Generated image"
-                    className="object-cover w-full h-full pointer-events-none"
-                    unoptimized
-                  />
-                </div>
-              </CardContent>
-              <CardFooter className="flex items-center justify-between p-4">
-                <div className="flex items-center space-x-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={img.userAvatar || ""} />
-                    <AvatarFallback> {getInitials(img.userName || "User")}</AvatarFallback>
-                  </Avatar>
-                  <div className="text-sm max-w-[150px] truncate">
-                    <p className="font-medium">{img.userName || "User"}</p>
-                    <p className="text-muted-foreground text-xs truncate">{img.prompt}</p>
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    const a = document.createElement("a");
-                    a.href = img.cloudinaryUrl;
-                    a.download = "generated-image.png";
-                    a.click();
-                  }}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-              </CardFooter>
-            </Card>
-          ))}
-          
+      <section aria-labelledby="recent-images-heading">
+        <div className="mb-5 flex items-center justify-between gap-4">
+          <div>
+            <h3 id="recent-images-heading" className="text-2xl font-semibold tracking-tight">Your recent images</h3>
+            <p className="text-sm text-muted-foreground">The latest images you have created.</p>
+          </div>
+          <Button asChild variant="outline" size="sm"><Link href="/profile">View all <ArrowRight /></Link></Button>
         </div>
-      )}
-      <div className="flex justify-center items-center ">
-      <Link href="showcase" target="_blank">
-      <Button>View Other&apos;s Creativity</Button>
-      </Link>
+        {isLoadingImages ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"><Skeleton className="aspect-square rounded-2xl" /><Skeleton className="aspect-square rounded-2xl" /><Skeleton className="aspect-square rounded-2xl" /></div>
+        ) : images.length ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{images.slice(0, 6).map((image) => <ImageCard key={image.id} image={image} />)}</div>
+        ) : (
+          <div className="surface-card p-10 text-center text-sm text-muted-foreground">Your first creation will appear here.</div>
+        )}
+      </section>
     </div>
-    </Form>
   );
 }
