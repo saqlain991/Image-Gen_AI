@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import Navbar from "@/components/navbar";
 import { ThemeProvider } from "@/components/themeProvider";
-import Footer from "@/components/footer";
 import FooterSection from "@/components/footer";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -21,17 +20,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en"  suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <AuthProvider>
           <ThemeProvider
             attribute="class"
-            defaultTheme="system"
-            enableSystem
+            defaultTheme="light"
+            enableSystem={false}
             disableTransitionOnChange
           >
             <Navbar />
-            <main className="min-h-screen bg-background">
+            <main className="min-h-[calc(100vh-9rem)]">
               {children}
             </main>
             <FooterSection />

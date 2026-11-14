@@ -53,12 +53,16 @@ model Session {
 model Image {
   id          String   @id @default(cuid())
   cloudinaryUrl String
-  prompt      String   @db.Text @unique // Make 'prompt' unique
+  prompt      String   @db.Text
+  modelId     String   @default("@cf/black-forest-labs/flux-1-schnell")
+  estimatedNeurons Float?
   userId      String
   userName    String?
   userAvatar  String?
   createdAt   DateTime @default(now())
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, prompt, modelId])
 }
 
 model Contact {

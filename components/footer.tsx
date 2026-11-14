@@ -1,27 +1,20 @@
-import { ModeToggle } from "@/components/ui/mode-toggle";
-import { Footer, FooterBottom } from "@/components/ui/footer";
-import { Github, GithubIcon, Linkedin, Mail } from "lucide-react";
-import { GitHubLogoIcon, LinkedInLogoIcon } from "@radix-ui/react-icons";
+import Link from "next/link";
+import { Github, ImagePlus, Mail } from "lucide-react";
 
-export default function FooterSection() {
-
-    // Function to get the current year
-const getCurrentYear = () => new Date().getFullYear();
+export default function Footer() {
   return (
-    <footer className="w-full bg-background px-4">
-      <div className="mx-auto max-w-container">
-        <Footer className="pt-0">
-          <FooterBottom className="mt-0 flex flex-col items-center gap-4 sm:flex-col md:flex-row">
-          <div>© {getCurrentYear()} Ai Image Generator. All rights reserved</div>
-            <div className="flex items-center gap-4">
-              <a href="login">Sign in</a> <a href="register">Sign up</a>|
-              <a href="https://github.com/saqlain991/Image-Gen_AI"><GithubIcon  /></a>
-              <a href="https://www.linkedin.com/in/saqlain-sultan"><Linkedin /></a>
-              <a href="mailto:saqlainsultan991@gmail.com"><Mail /></a>
-              <ModeToggle />
-            </div>
-          </FooterBottom>
-        </Footer>
+    <footer className="border-t bg-card/70">
+      <div className="container mx-auto flex flex-col gap-6 px-4 py-8 sm:px-6 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-2 text-sm font-semibold">
+          <ImagePlus className="size-4 text-primary" /> Image Studio
+          <span className="ml-2 font-normal text-muted-foreground">Create, save, and share.</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-5 text-sm text-muted-foreground">
+          <Link href="/contact" className="hover:text-foreground">Contact</Link>
+          <a href="https://github.com/saqlain991/Image-Gen_AI" aria-label="GitHub" className="hover:text-foreground"><Github className="size-4" /></a>
+          <a href="mailto:saqlainsultan991@gmail.com" aria-label="Email" className="hover:text-foreground"><Mail className="size-4" /></a>
+          <span>© {new Date().getUTCFullYear()} Image Studio</span>
+        </div>
       </div>
     </footer>
   );

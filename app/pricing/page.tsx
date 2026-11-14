@@ -1,114 +1,41 @@
-"use client";
-
-import { useSession } from "next-auth/react";
+import Link from "next/link";
+import { ArrowRight, Check, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Check } from "lucide-react";
-import { toast } from "sonner";
-import { useState } from "react";
-
-// Plan details
-const plans = [
-  {
-    name: "Free",
-    price: "$0",
-    description: "Perfect for trying out our service",
-    features: [
-      "5 image generations per month",
-      "Basic image quality",
-      "4 images per row display",
-      "Download generated images",
-    ],
-  },
-  {
-    name: "Pro",
-    price: "$10",
-    description: "For professionals and serious creators",
-    features: [
-      "Unlimited image generations",
-      "Premium image quality",
-      "8 images per row display",
-      "Priority support",
-      "Commercial usage rights",
-      "Advanced customization options",
-    ],
-  },
-];
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DAILY_FREE_NEURONS, IMAGE_MODELS } from "@/lib/image-models";
 
 export default function PricingPage() {
-  const { data: session } = useSession();
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleUpgrade = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch("/api/stripe", { method: "POST" });
-      if (!response.ok) throw new Error("Failed to create checkout session");
-
-      const data = await response.json();
-      window.location.href = data.url;
-    } catch (error) {
-      toast.error("Failed to initiate upgrade");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-5xl mx-auto space-y-8">
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold">Simple, transparent pricing</h1>
-          <p className="text-muted-foreground">
-            Choose the perfect plan for your needs
-          </p>
+    <div className="page-shell">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-10 max-w-2xl">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Free usage</p>
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Create within the daily allowance.</h1>
+          <p className="mt-4 text-muted-foreground">Cloudflare Workers AI provides {DAILY_FREE_NEURONS.toLocaleString()} free neurons per account each day, shared by every model and every app using that account. The allowance resets at 00:00 UTC.</p>
         </div>
-
-        <div className="grid md:grid-cols-2 gap-8">
-          {plans.map((plan) => (
-            <Card key={plan.name} className="flex flex-col">
-              <CardHeader>
-                <CardTitle>{plan.name}</CardTitle>
-                <CardDescription>{plan.description}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1">
-                <div className="text-3xl font-bold mb-6">{plan.price}</div>
-                <ul className="space-y-2">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-              <CardFooter>
-                {plan.name === "Pro" ? (
-                  <Button
-                    className="w-full"
-                    onClick={handleUpgrade}
-                    disabled={isLoading || session?.user?.role === "PRO"}
-                  >
-                    {session?.user?.role === "PRO"
-                      ? "Current Plan"
-                      : "Upgrade to Pro"}
-                  </Button>
-                ) : (
-                  <Button variant="outline" className="w-full" disabled>
-                    Free Plan
-                  </Button>
-                )}
-              </CardFooter>
+        <Card className="mb-8 rounded-3xl">
+          <CardHeader><CardTitle>What you can use</CardTitle></CardHeader>
+          <CardContent className="grid gap-4 text-sm sm:grid-cols-2">
+            <p className="flex gap-3"><Check className="size-5 shrink-0 text-primary" />Choose among supported hosted text to image models</p>
+            <p className="flex gap-3"><Check className="size-5 shrink-0 text-primary" />Save and download your generated images</p>
+            <p className="flex gap-3"><Check className="size-5 shrink-0 text-primary" />View this app’s estimated daily neuron use</p>
+            <p className="flex gap-3"><Check className="size-5 shrink-0 text-primary" />Reuse the same prompt and model without another AI call</p>
+          </CardContent>
+        </Card>
+        <h2 className="mb-4 text-2xl font-semibold">Available models</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {IMAGE_MODELS.map((model) => (
+            <Card key={model.id} className="rounded-2xl">
+              <CardHeader className="pb-3"><p className="text-xs font-semibold uppercase tracking-widest text-primary">{model.provider}</p><CardTitle className="text-lg">{model.name}</CardTitle></CardHeader>
+              <CardContent><p className="text-sm text-muted-foreground">{model.description}</p><p className="mt-3 text-sm font-medium">{model.estimatedNeurons === null ? "Neuron estimate unavailable" : `~${model.estimatedNeurons.toLocaleString()} neurons / image`}</p>{model.retiresOn && <p className="mt-2 text-xs text-muted-foreground">Planned retirement: November 20, 2026</p>}{model.availabilityNote && <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">{model.availabilityNote}</p>}</CardContent>
             </Card>
           ))}
         </div>
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <Button asChild><Link href="/">Start creating <ArrowRight /></Link></Button>
+          <Button asChild variant="outline"><a href="https://developers.cloudflare.com/workers-ai/platform/pricing/" target="_blank" rel="noreferrer">Cloudflare pricing <ExternalLink /></a></Button>
+        </div>
+        <p className="mt-5 max-w-3xl text-sm text-muted-foreground">Estimates use the fixed image settings shown in this app. Cloudflare’s dashboard is authoritative for actual account usage, including requests made outside this app and requests that fail after inference.</p>
       </div>
     </div>
   );

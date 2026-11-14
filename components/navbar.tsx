@@ -1,189 +1,116 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSession, signOut } from "next-auth/react";
+import { usePathname } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
+import { useTheme } from "next-themes";
+import { ImagePlus, Menu, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoonIcon, SunIcon, MenuIcon } from "lucide-react";
-import { useTheme } from "next-themes";
+import {
+  Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger,
+} from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
+
+const links = [
+  { href: "/", label: "Create" },
+  { href: "/showcase", label: "Explore" },
+  { href: "/pricing", label: "Pricing" },
+  { href: "/contact", label: "Contact" },
+];
 
 export default function Navbar() {
-  const { data: session } = useSession();
-  const { setTheme, theme } = useTheme();
+  const pathname = usePathname();
+  const { data: session, status } = useSession();
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  const [isDrawerOpen, setDrawerOpen] = useState(false);
-  const toggleDrawer = () => setDrawerOpen((prev) => !prev);
+  const themeButton = (
+    <Button
+      variant="ghost"
+      size="icon"
+      aria-label="Toggle color theme"
+      onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+    >
+      {mounted && resolvedTheme === "dark" ? <Sun /> : <Moon />}
+    </Button>
+  );
 
   return (
-    <nav className="border-b">
-      <div className="container mx-auto flex h-16 items-center px-4">
-        {/* Logo */}
-        <Link href="/" className="font-bold text-lg">
-          AI Image Generator
+    <header className="sticky top-0 z-40 border-b bg-background/90 backdrop-blur-xl">
+      <nav className="container mx-auto flex h-16 items-center justify-between gap-4 px-4 sm:px-6" aria-label="Main navigation">
+        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
+          <span className="flex size-9 items-center justify-center rounded-xl bg-primary text-primary-foreground"><ImagePlus className="size-5" /></span>
+          <span>Image Studio</span>
         </Link>
 
-        {/* Centered Links for Large Screens */}
-        <div className="hidden lg:flex flex-1 justify-center space-x-10">
-          <Link href="/" className="text-sm font-medium hover:underline">
-            Generate Image
-          </Link>
-          <Link href="/showcase" className="text-sm font-medium hover:underline">
-            Showcase
-          </Link>
-          <Link href="/pricing" className="text-sm font-medium hover:underline">
-            Pricing
-          </Link>
+        <div className="hidden items-center gap-1 md:flex">
+          {links.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              aria-current={pathname === link.href ? "page" : undefined}
+              className={cn(
+                "rounded-full px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground",
+                pathname === link.href && "bg-secondary text-secondary-foreground"
+              )}
+            >
+              {link.label}
+            </Link>
+          ))}
         </div>
 
-        {/* User & Theme Actions (Right Side) */}
-        <div className="ml-auto flex items-center space-x-4">
-          {/* Theme Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="hidden lg:block"
-          >
-            {theme === "dark" ? (
-              <SunIcon className="h-5 w-5" />
-            ) : (
-              <MoonIcon className="h-5 w-5" />
-            )}
-          </Button>
-
-          {/* Auth Links */}
-          {session ? (
+        <div className="flex items-center gap-1 sm:gap-2">
+          {themeButton}
+          {status === "authenticated" && session ? (
             <DropdownMenu>
-              <DropdownMenuTrigger>
-                <Avatar>
-                  <AvatarImage src={session.user?.image || ""} />
-                  <AvatarFallback>
-                    {session.user?.name?.[0] || session.user?.email?.[0]}
-                  </AvatarFallback>
-                </Avatar>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Account menu" className="rounded-full">
+                  <Avatar className="size-8">
+                    <AvatarImage src={session.user?.image || ""} />
+                    <AvatarFallback>{(session.user?.name || session.user?.email || "U").charAt(0).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
-                  <Link href="/profile">Profile</Link>
-                </DropdownMenuItem>
-                {/* <DropdownMenuItem>
-                  <Link href="/showcase">Showcase</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Link href="/pricing">Pricing</Link>
-                </DropdownMenuItem> */}
-                <DropdownMenuItem onClick={() => signOut()}>
-                  Sign Out
-                </DropdownMenuItem>
+                <DropdownMenuItem asChild><Link href="/profile">My gallery</Link></DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => signOut({ callbackUrl: "/" })}>Sign out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          ) : (
-            <div className="space-x-2 hidden lg:flex">
-              <Button variant="outline" asChild>
-                <Link href="/contact">Contact</Link>
-              </Button>
-              <Button asChild>
-                <Link href="/login">Login</Link>
-              </Button>
-            </div>
-          )}
+          ) : status === "unauthenticated" ? (
+            <Button asChild size="sm" className="hidden sm:inline-flex"><Link href="/login">Sign in</Link></Button>
+          ) : null}
 
-          {/* Mobile Theme Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            className="lg:hidden"
-          >
-            {theme === "dark" ? (
-              <SunIcon className="h-5 w-5" />
-            ) : (
-              <MoonIcon className="h-5 w-5" />
-            )}
-          </Button>
-
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleDrawer}
-            className="lg:hidden"
-          >
-            <MenuIcon className="h-6 w-6" />
-          </Button>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu"><Menu /></Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="flex flex-col">
+              <SheetHeader><SheetTitle>Image Studio</SheetTitle></SheetHeader>
+              <div className="mt-6 flex flex-col gap-2">
+                {links.map((link) => (
+                  <SheetClose asChild key={link.href}>
+                    <Link href={link.href} className="rounded-xl px-4 py-3 text-sm font-medium hover:bg-accent">{link.label}</Link>
+                  </SheetClose>
+                ))}
+                {status === "authenticated" ? (
+                  <SheetClose asChild><Link href="/profile" className="rounded-xl px-4 py-3 text-sm font-medium hover:bg-accent">My gallery</Link></SheetClose>
+                ) : (
+                  <>
+                    <SheetClose asChild><Link href="/login" className="rounded-xl px-4 py-3 text-sm font-medium hover:bg-accent">Sign in</Link></SheetClose>
+                    <SheetClose asChild><Link href="/register" className="rounded-xl px-4 py-3 text-sm font-medium hover:bg-accent">Create account</Link></SheetClose>
+                  </>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
-      </div>
-
-      {/* Mobile Drawer */}
-      <div
-        className={`lg:hidden fixed inset-0 bg-black bg-opacity-50 transition-opacity ${
-          isDrawerOpen ? "opacity-100 z-50" : "opacity-0 pointer-events-none"
-        }`}
-        onClick={toggleDrawer}
-      >
-        <div
-          className={`fixed top-0 right-0 bg-white dark:bg-black dark:text-slate-50 w-3/4 h-full shadow-lg transition-transform ${
-            isDrawerOpen ? "translate-x-0" : "translate-x-full"
-          }`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="flex justify-between p-4 border-b">
-            <Link href="/" className="font-bold" onClick={toggleDrawer}>
-              AI Image Generator
-            </Link>
-            <Button onClick={toggleDrawer} variant="ghost" size="icon">
-              <MenuIcon className="h-6 w-6" />
-            </Button>
-          </div>
-
-          {/* Mobile Links */}
-          <div className="flex flex-col space-y-4 p-4">
-            <Link href="/" onClick={toggleDrawer} className="text-lg">
-              Generate Image
-            </Link>
-            <Link href="/showcase" onClick={toggleDrawer} className="text-lg">
-              Showcase
-            </Link>
-            <Link href="/pricing" onClick={toggleDrawer} className="text-lg">
-              Pricing
-            </Link>
-
-            {session ? (
-              <>
-                <Link href="/profile" onClick={toggleDrawer} className="text-lg">
-                  Profile
-                </Link>
-                <Button
-                  onClick={() => {
-                    signOut();
-                    toggleDrawer();
-                  }}
-                  variant="outline"
-                  className="w-full text-lg"
-                >
-                  Sign Out
-                </Button>
-              </>
-            ) : (
-              <>
-                <Link href="/contact" onClick={toggleDrawer} className="text-lg">
-                  Contact
-                </Link>
-                <Link href="/register" onClick={toggleDrawer} className="text-lg">
-                  Register
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-    </nav>
+      </nav>
+    </header>
   );
 }
